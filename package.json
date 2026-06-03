@@ -1,0 +1,25 @@
+{
+  "name": "cosmomap-render",
+  "version": "1.0.0",
+  "description": "CityMap server-side render service (AGPL-3.0). Derives from Terraink.",
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@maplibre/maplibre-gl-native": "6.4.1",
+    "fastify": "^4.28.1",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

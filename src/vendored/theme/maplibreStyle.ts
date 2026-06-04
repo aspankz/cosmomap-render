@@ -82,7 +82,7 @@ const STREET_LABEL_TEXT_SIZE: any = [
 const SOURCE_MAX_ZOOM = 14;
 
 const BUILDING_BLEND_FACTOR = 0.14;
-const BUILDING_FILL_OPACITY = 0.84;
+const BUILDING_FILL_OPACITY = 1;
 const MAP_BUILDING_MIN_ZOOM_DEFAULT = 8;
 const MAP_BUILDING_MIN_ZOOM_PRESERVE = 8.2;
 const DETAIL_PRESERVE_DISTANCE_METERS = 30_000;
@@ -230,11 +230,11 @@ export function generateMapStyle(theme: ResolvedTheme, options?: LayerOptions): 
     },
     layers: [
       { id: 'background', type: 'background', paint: { 'background-color': theme.map.land } },
-      { id: 'landcover', source: SOURCE_ID, 'source-layer': 'landcover', type: 'fill', layout: { visibility: V(includeLandcover) }, paint: { 'fill-color': theme.map.landcover, 'fill-opacity': 0.7 } },
+      { id: 'landcover', source: SOURCE_ID, 'source-layer': 'landcover', type: 'fill', layout: { visibility: V(includeLandcover) }, paint: { 'fill-color': theme.map.landcover, 'fill-opacity': 1 } },
       { id: 'park', source: SOURCE_ID, 'source-layer': 'park', type: 'fill', layout: { visibility: V(includeParks) }, paint: { 'fill-color': theme.map.parks } },
       { id: 'water', source: SOURCE_ID, 'source-layer': 'water', type: 'fill', layout: { visibility: V(includeWater) }, paint: { 'fill-color': theme.map.water } },
       { id: 'waterway', source: SOURCE_ID, 'source-layer': 'waterway', type: 'line', filter: lineClassFilter(['river', 'canal', 'stream', 'ditch']), paint: { 'line-color': theme.map.waterway, 'line-width': widthExpr(waterwayWidthStops) }, layout: { visibility: V(includeWater), 'line-cap': 'round', 'line-join': 'round' } },
-      { id: 'aeroway', source: SOURCE_ID, 'source-layer': 'aeroway', type: 'fill', filter: ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false], layout: { visibility: V(includeAeroway) }, paint: { 'fill-color': theme.map.aeroway, 'fill-opacity': 0.85 } },
+      { id: 'aeroway', source: SOURCE_ID, 'source-layer': 'aeroway', type: 'fill', filter: ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false], layout: { visibility: V(includeAeroway) }, paint: { 'fill-color': theme.map.aeroway, 'fill-opacity': 1 } },
       { id: 'building', source: SOURCE_ID, 'source-layer': 'building', type: 'fill', minzoom: buildingMinZoom, layout: { visibility: V(includeBuildings) }, paint: { 'fill-color': buildingFill, 'fill-opacity': BUILDING_FILL_OPACITY } },
       { id: 'rail', source: SOURCE_ID, 'source-layer': 'transportation', type: 'line', filter: lineClassFilter(MAP_RAIL_CLASSES), paint: { 'line-color': theme.map.rail, 'line-width': widthExpr(railWidthStops), 'line-opacity': opacityExpr([[0, 0.56], [12, 0.62], [18, 0.72]]), 'line-dasharray': [2, 1.6] }, layout: { visibility: V(includeRail), 'line-cap': 'round', 'line-join': 'round' } },
       { id: 'road-minor-overview-high', source: SOURCE_ID, 'source-layer': 'transportation', type: 'line', minzoom: ROAD_MINOR_OVERVIEW_MIN_ZOOM, maxzoom: ROAD_OVERVIEW_MAX_ZOOM, filter: lineClassFilter(MAP_ROAD_MINOR_HIGH_CLASSES), paint: { 'line-color': roadMinorHighColor, 'line-width': widthExpr(roadMinorOverviewHighWidthStops), 'line-opacity': opacityExpr([[0, 0.66], [8, 0.76], [12, 0]]) }, layout: { visibility: roadsVis, 'line-cap': 'round', 'line-join': 'round' } },

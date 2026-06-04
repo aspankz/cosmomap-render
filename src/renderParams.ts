@@ -83,7 +83,10 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
     throw new ValidationError('Must provide center+framingZoom or bounds');
   }
 
-  if (center !== undefined) {
+  // center is only the framing source when bounds is absent. When bounds is
+  // present, center is ignored (the backend may send an empty/default center),
+  // so only validate its format on the legacy no-bounds path.
+  if (bounds === null && center !== undefined) {
     if (!Array.isArray(center) || center.length !== 2 ||
         typeof center[0] !== 'number' || typeof center[1] !== 'number') {
       throw new ValidationError('center must be [lng, lat] numbers');

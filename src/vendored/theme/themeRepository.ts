@@ -4,7 +4,12 @@
 import themesManifest from './data/themes.json';
 import { blendHex, normalizeHexColor } from './color';
 import { getThemeColorByPath } from './colorPaths';
-import type { ResolvedTheme, ThemeColorKey, ThemeOption } from './types';
+import type {
+  ResolvedTheme,
+  ThemeColorKey,
+  ThemeLabelColors,
+  ThemeOption,
+} from './types';
 import { DISPLAY_PALETTE_KEYS } from './types';
 
 const hexColorPattern =
@@ -38,8 +43,29 @@ const fallbackTheme: ResolvedTheme = {
       path: '#D9A08A',
       outline: '#F5EDE4',
     },
+    label: {
+      text: '#8B4513',
+      halo: '#F5EDE4',
+    },
   },
 };
+
+/**
+ * Derives readable street-label colors from a theme when it carries no explicit
+ * `label` token. Pairs the theme's text color (designed to contrast its
+ * background) with the land color as the halo, so labels stay legible on both
+ * dark `classic_*` themes (light text / dark halo) and light Terraink themes
+ * (dark text / light halo) — never black-on-dark (spec req #3).
+ */
+function deriveLabelColors(
+  text: string,
+  land: string
+): ThemeLabelColors {
+  return {
+    text: text || fallbackTheme.map.label.text,
+    halo: land || fallbackTheme.map.label.halo,
+  };
+}
 
 const themeColorLookup: Record<ThemeColorKey, string[]> = {
   'ui.bg': ['ui.bg', 'gradient_color', 'bg'],
@@ -184,6 +210,15 @@ function normalizeTheme(themeInput: unknown): ResolvedTheme {
     return normalizedTextHex;
   })();
 
+  // Explicit `map.label.{text,halo}` if the theme data carries it; otherwise
+  // derive a readable pair from the theme's text + land colors.
+  const labelTextExplicit = resolveThemeColor(theme, 'map.label.text');
+  const labelHaloExplicit = resolveThemeColor(theme, 'map.label.halo');
+  const label = deriveLabelColors(
+    labelTextExplicit || uiText,
+    labelHaloExplicit || land
+  );
+
   return {
     name,
     description,
@@ -205,6 +240,7 @@ function normalizeTheme(themeInput: unknown): ResolvedTheme {
         path: roadPath,
         outline: roadOutline,
       },
+      label,
     },
   };
 }

@@ -9,6 +9,76 @@ import type { ResolvedTheme } from './types';
 
 const OPENFREEMAP_SOURCE = 'https://tiles.openfreemap.org/planet';
 const SOURCE_ID = 'openfreemap';
+
+// ─── Street labels (Experiment 5) ──────────────────────────────────────────────
+// SYNC INVARIANT: the block between this banner and its closing banner is
+// byte-equivalent to the frontend copy (apps/frontend/src/entities/cityMap/theme/maplibreStyle.ts).
+// It is self-contained (no render-only imports) so it can be copied verbatim.
+
+/**
+ * OpenFreeMap glyph (font) endpoint. Confirmed by Stage-0 spike: full Cyrillic
+ * coverage (range 1024-1279) on "Noto Sans Regular"/"Noto Sans Bold"; "Noto Sans
+ * Medium" and "Roboto" 404 — do not reference them. Public URL works for both the
+ * browser preview (maplibre-gl-js) and the native render service (no localhost).
+ */
+const OPENFREEMAP_GLYPHS =
+  'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+
+/** OMT source-layer carrying road names (separate from `transportation` geometry). */
+const TRANSPORTATION_NAME_SOURCE_LAYER = 'transportation_name';
+const ROAD_LABELS_LAYER_ID = 'road-labels';
+const STREET_LABEL_FONT = 'Noto Sans Regular';
+
+/**
+ * Road classes worth labeling on a poster. `service`/`path`/`track` are
+ * courtyard/pedestrian noise at over-zoom and are intentionally excluded.
+ */
+const STREET_LABEL_CLASSES = [
+  'primary',
+  'primary_link',
+  'secondary',
+  'secondary_link',
+  'tertiary',
+  'tertiary_link',
+  'minor',
+];
+
+const STREET_LABEL_MIN_ZOOM = 12;
+
+// RU (default): local Cyrillic `name`. EN: latin where present, Cyrillic fallback
+// (mixed-script accepted per spike — there is no clean all-Latin Russia).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const STREET_LABEL_TEXT_FIELD_RU: any = ['coalesce', ['get', 'name'], ''];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const STREET_LABEL_TEXT_FIELD_EN: any = [
+  'coalesce',
+  ['get', 'name:latin'],
+  ['get', 'name:en'],
+  ['get', 'name'],
+  '',
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const STREET_LABEL_FILTER: any = [
+  'all',
+  ['match', ['geometry-type'], ['LineString', 'MultiLineString'], true, false],
+  ['match', ['get', 'class'], STREET_LABEL_CLASSES, true, false],
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const STREET_LABEL_TEXT_SIZE: any = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  12,
+  11,
+  14,
+  13,
+  16,
+  15,
+];
+// ─── End street labels ─────────────────────────────────────────────────────────
+
 const SOURCE_MAX_ZOOM = 14;
 
 const BUILDING_BLEND_FACTOR = 0.14;
@@ -93,6 +163,12 @@ export interface LayerOptions {
   includeRoadMinorLow?: boolean;
   includeRoadOutline?: boolean;
   distanceMeters?: number;
+  /** Street labels (Experiment 5). Default true. */
+  includeStreetLabels?: boolean;
+  /** Label text language. 'en' = latin-with-fallback; anything else → 'ru'. */
+  labelLanguage?: 'ru' | 'en';
+  /** Reserved (DECISION 6): place labels. Default false; layer NOT emitted in Exp-5. */
+  includePlaceLabels?: boolean;
 }
 
 // Return type is `unknown` — StyleSpecification type-only dep removed (was maplibre-gl import).
@@ -112,6 +188,10 @@ export function generateMapStyle(theme: ResolvedTheme, options?: LayerOptions): 
   const includeRoadPath = options?.includeRoadPath ?? true;
   const includeRoadMinorLow = options?.includeRoadMinorLow ?? true;
   const includeRoadOutline = options?.includeRoadOutline ?? true;
+  const includeStreetLabels = options?.includeStreetLabels ?? true;
+  // Normalize in one place: any non-'en' value is treated as 'ru' (guards against
+  // stale-persisted language strings).
+  const labelLanguage = options?.labelLanguage === 'en' ? 'en' : 'ru';
   const buildingMinZoom = resolveBuildingMinZoom(options?.distanceMeters);
 
   const minorHighCasingStops = scaledStops(MAP_ROAD_MINOR_HIGH_DETAIL_WIDTH_STOPS, 1.45);
@@ -144,6 +224,7 @@ export function generateMapStyle(theme: ResolvedTheme, options?: LayerOptions): 
 
   return {
     version: 8,
+    glyphs: OPENFREEMAP_GLYPHS,
     sources: {
       [SOURCE_ID]: { type: 'vector', url: OPENFREEMAP_SOURCE, maxzoom: SOURCE_MAX_ZOOM },
     },
@@ -169,6 +250,40 @@ export function generateMapStyle(theme: ResolvedTheme, options?: LayerOptions): 
       { id: 'road-minor-mid', source: SOURCE_ID, 'source-layer': 'transportation', type: 'line', minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM, filter: lineClassFilter(MAP_ROAD_MINOR_MID_CLASSES), paint: { 'line-color': roadMinorMidColor, 'line-width': widthExpr(roadMinorDetailMidWidthStops), 'line-opacity': opacityExpr([[6, 0.62], [10, 0.74], [18, 0.86]]) }, layout: { visibility: roadsVis, 'line-cap': 'round', 'line-join': 'round' } },
       { id: 'road-minor-low', source: SOURCE_ID, 'source-layer': 'transportation', type: 'line', minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM, filter: lineClassFilter(MAP_ROAD_MINOR_LOW_CLASSES), paint: { 'line-color': roadMinorLowColor, 'line-width': widthExpr(roadMinorDetailLowWidthStops), 'line-opacity': includeRoadMinorLow ? opacityExpr([[6, 0.34], [10, 0.46], [18, 0.58]]) : 0 }, layout: { visibility: roadsVis, 'line-cap': 'round', 'line-join': 'round' } },
       { id: 'road-path', source: SOURCE_ID, 'source-layer': 'transportation', type: 'line', minzoom: ROAD_PATH_DETAIL_MIN_ZOOM, filter: lineClassFilter(MAP_ROAD_PATH_CLASSES), paint: { 'line-color': roadPathColor, 'line-width': widthExpr(roadPathDetailWidthStops), 'line-opacity': includeRoadPath ? opacityExpr([[8, 0.7], [12, 0.82], [18, 0.95]]) : 0 }, layout: { visibility: roadsVis, 'line-cap': 'round', 'line-join': 'round' } },
+
+      // ─── road-labels (Experiment 5) — SYNC INVARIANT with frontend copy ───────
+      // Self-contained symbol layer drawn last (on top of geometry). Toggled at
+      // build time by `includeStreetLabels`; `labelLanguage` switches text-field.
+      // The only non-literal input is `theme.map.label` (a resolved {text,halo}).
+      {
+        id: ROAD_LABELS_LAYER_ID,
+        source: SOURCE_ID,
+        'source-layer': TRANSPORTATION_NAME_SOURCE_LAYER,
+        type: 'symbol' as const,
+        minzoom: STREET_LABEL_MIN_ZOOM,
+        filter: STREET_LABEL_FILTER,
+        layout: {
+          visibility: includeStreetLabels
+            ? ('visible' as const)
+            : ('none' as const),
+          'symbol-placement': 'line' as const,
+          'symbol-spacing': 250,
+          'text-field':
+            labelLanguage === 'en'
+              ? STREET_LABEL_TEXT_FIELD_EN
+              : STREET_LABEL_TEXT_FIELD_RU,
+          'text-font': [STREET_LABEL_FONT],
+          'text-size': STREET_LABEL_TEXT_SIZE,
+          'text-padding': 2,
+        },
+        paint: {
+          'text-color': theme.map.label.text,
+          'text-halo-color': theme.map.label.halo,
+          'text-halo-width': 1.4,
+          'text-halo-blur': 0.4,
+        },
+      },
+      // ─── End road-labels ──────────────────────────────────────────────────────
     ],
   };
 }

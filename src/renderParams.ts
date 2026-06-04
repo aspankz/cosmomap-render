@@ -46,6 +46,12 @@ export interface RenderParams {
   layerOptions: LayerOptions;
   distanceMeters?: number | null;
 
+  // ---- street labels (Experiment 5) ----
+  /** Show street-name labels in the final render. Default true (default-safe). */
+  showStreetNames: boolean;
+  /** Label language: 'ru' (local Cyrillic name) | 'en' (latin w/ fallback). Default 'ru'. */
+  mapLanguage: 'ru' | 'en';
+
   // ---- symbols ----
   symbols: SymbolParam[];
 }
@@ -144,6 +150,12 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
 
   const orientation = r['orientation'] === 'landscape' ? 'landscape' : 'portrait';
 
+  // Street labels (Experiment 5) — default-safe: absent field → labels on, RU.
+  // showStreetNames defaults true unless an explicit `false` is sent.
+  const showStreetNames = r['showStreetNames'] === false ? false : true;
+  // Any non-'en' value (incl. absent / stale) normalizes to 'ru'.
+  const mapLanguage = r['mapLanguage'] === 'en' ? 'en' : 'ru';
+
   return {
     center: center as [number, number],
     framingZoom: framingZoom as number,
@@ -157,6 +169,8 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
     colorOverrides,
     layerOptions,
     distanceMeters: typeof r['distanceMeters'] === 'number' ? r['distanceMeters'] : null,
+    showStreetNames,
+    mapLanguage,
     symbols,
   };
 }

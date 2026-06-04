@@ -14,6 +14,13 @@ export interface ThemeRoadColors {
   outline: string;
 }
 
+export interface ThemeLabelColors {
+  /** Text fill for street/place labels — must read against the map background. */
+  text: string;
+  /** Halo color behind label text — usually the theme land/background color. */
+  halo: string;
+}
+
 export interface ThemeMapColors {
   land: string;
   landcover: string;
@@ -24,6 +31,12 @@ export interface ThemeMapColors {
   aeroway: string;
   rail: string;
   roads: ThemeRoadColors;
+  /**
+   * Street-label text + halo colors (Experiment 5). Optional in raw theme data:
+   * themeRepository fills it via deriveLabelColors() when absent, so older themes
+   * in themes.json need no migration to render readable labels.
+   */
+  label: ThemeLabelColors;
 }
 
 export interface ThemeColors {

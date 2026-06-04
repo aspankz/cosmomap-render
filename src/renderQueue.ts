@@ -42,7 +42,7 @@ function enqueue(job: RenderJob): Promise<Buffer> {
 }
 
 async function doRender(params: RenderParams): Promise<Buffer> {
-  const { center: legacyCenter, framingZoom, bounds, width, height, ratio, themeId, colorOverrides, layerOptions, distanceMeters, symbols } = params;
+  const { center: legacyCenter, framingZoom, bounds, width, height, ratio, themeId, colorOverrides, layerOptions, distanceMeters, showStreetNames, mapLanguage, symbols } = params;
 
   // --- Framing: bounds is primary (RP1 fitBounds fix) ---
   // output device px (callers send device px with ratio=1, or logical px with ratio>1 for back-compat)
@@ -73,10 +73,13 @@ async function doRender(params: RenderParams): Promise<Buffer> {
     ? applyThemeColorOverrides(rawTheme, colorOverrides)
     : rawTheme;
 
-  // Build style — merge distanceMeters into layerOptions-compatible shape
+  // Build style — merge distanceMeters into layerOptions-compatible shape.
+  // Street labels (Experiment 5): map RenderParams → generateMapStyle options.
   const styleOptions = {
     ...layerOptions,
     distanceMeters: distanceMeters ?? undefined,
+    includeStreetLabels: showStreetNames,
+    labelLanguage: mapLanguage,
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const style = generateMapStyle(theme, styleOptions as any);

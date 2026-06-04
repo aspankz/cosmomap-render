@@ -10,6 +10,14 @@ import type { SymbolParam } from './renderParams';
 const TILE_SIZE = 512;
 
 /**
+ * Reference long-side in device px for symbol sizing parity.
+ * At REFERENCE_LONG_SIDE output, symbol base size = 40 device px (size=1.0).
+ * Scales proportionally for larger outputs (300-DPI prints etc.).
+ * ~1000 is close to typical map-box preview long side.
+ */
+const REFERENCE_LONG_SIDE = 1000;
+
+/**
  * Web Mercator projection.
  * Returns device-pixel {x, y} relative to the top-left corner of the rendered image.
  * Verified: center projects to exactly (W/2 * ratio, H/2 * ratio) = (W_device/2, H_device/2).
@@ -91,9 +99,13 @@ export async function compositeSymbols(
 
   const composites: sharp.OverlayOptions[] = [];
 
+  // Symbol size scales with output resolution for visual parity (RP1 §1.4 / R-F)
+  const outputLongSide = Math.max(deviceWidth, deviceHeight);
+  const symbolScale = outputLongSide / REFERENCE_LONG_SIDE;
+
   for (const sym of symbols) {
     const { x, y } = project(sym.lng, sym.lat, center, renderZoom, width, height, ratio);
-    const sizeDevicePx = Math.round(40 * sym.size * ratio);
+    const sizeDevicePx = Math.round(40 * sym.size * symbolScale);
 
     if (sizeDevicePx <= 0) continue;
 

@@ -50,7 +50,7 @@ export interface RenderParams {
   symbols: SymbolParam[];
 }
 
-export const MAX_DEVICE_PIXELS = 40_000_000; // 40MP cap
+export const MAX_DEVICE_PIXELS = 70_000_000; // 70MP cap (50×70 @ 300 DPI ≈ 48.8MP)
 
 /** Apply defaults and return a normalized params object. Throws on invalid input. */
 export function normalizeAndValidateParams(raw: unknown): RenderParams {
@@ -62,7 +62,22 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
   // center + framingZoom OR bounds required
   const center = r['center'];
   const framingZoom = r['framingZoom'];
-  const bounds = r['bounds'] ?? null;
+  const rawBounds = r['bounds'] ?? null;
+
+  // Validate bounds if provided
+  let bounds: [[number, number], [number, number]] | null = null;
+  if (rawBounds !== null && rawBounds !== undefined) {
+    if (
+      !Array.isArray(rawBounds) || rawBounds.length !== 2 ||
+      !Array.isArray(rawBounds[0]) || rawBounds[0].length !== 2 ||
+      !Array.isArray(rawBounds[1]) || rawBounds[1].length !== 2 ||
+      typeof rawBounds[0][0] !== 'number' || typeof rawBounds[0][1] !== 'number' ||
+      typeof rawBounds[1][0] !== 'number' || typeof rawBounds[1][1] !== 'number'
+    ) {
+      throw new ValidationError('bounds must be [[wLng,sLat],[eLng,nLat]] numbers');
+    }
+    bounds = rawBounds as [[number, number], [number, number]];
+  }
 
   if ((center === undefined || framingZoom === undefined) && bounds === null) {
     throw new ValidationError('Must provide center+framingZoom or bounds');
@@ -86,7 +101,7 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
   if (typeof height !== 'number' || height <= 0) throw new ValidationError('height is required (positive number)');
   if (typeof themeId !== 'string' || !themeId) throw new ValidationError('themeId is required (string)');
 
-  const ratio = typeof r['ratio'] === 'number' ? r['ratio'] : 4;
+  const ratio = typeof r['ratio'] === 'number' ? r['ratio'] : 1;
   if (ratio <= 0 || ratio > 8) throw new ValidationError('ratio must be 1–8');
 
   const devicePx = Math.round(width * ratio) * Math.round(height * ratio);
@@ -129,7 +144,7 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
   return {
     center: center as [number, number],
     framingZoom: framingZoom as number,
-    bounds: bounds as [[number, number], [number, number]] | null,
+    bounds,
     overzoomScale,
     width,
     height,

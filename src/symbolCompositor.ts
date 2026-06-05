@@ -70,9 +70,12 @@ export interface CompositeInput {
   top: number;
 }
 
+/** WebP quality for previews — visually lossless on flat map art, ~½–⅓ PNG weight. */
+const WEBP_QUALITY = 82;
+
 /**
  * Composites symbols onto the RGBA buffer from mbgl.
- * Returns a PNG Buffer.
+ * Returns a PNG Buffer ('png') or a WebP Buffer ('webp', previews).
  */
 export async function compositeSymbols(
   rgbaBuffer: Buffer,
@@ -85,16 +88,19 @@ export async function compositeSymbols(
     height: number; // logical px
     ratio: number;
     symbols: SymbolParam[];
+    format: 'png' | 'webp';
   }
 ): Promise<Buffer> {
-  const { center, renderZoom, width, height, ratio, symbols } = params;
+  const { center, renderZoom, width, height, ratio, symbols, format } = params;
+  const encode = (s: sharp.Sharp): Promise<Buffer> =>
+    format === 'webp' ? s.webp({ quality: WEBP_QUALITY }).toBuffer() : s.png().toBuffer();
 
   let img = sharp(rgbaBuffer, {
     raw: { width: deviceWidth, height: deviceHeight, channels: 4 },
   });
 
   if (symbols.length === 0) {
-    return img.png().toBuffer();
+    return encode(img);
   }
 
   const composites: sharp.OverlayOptions[] = [];
@@ -126,8 +132,8 @@ export async function compositeSymbols(
   }
 
   if (composites.length === 0) {
-    return img.png().toBuffer();
+    return encode(img);
   }
 
-  return img.composite(composites).png().toBuffer();
+  return encode(img.composite(composites));
 }

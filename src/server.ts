@@ -39,11 +39,11 @@ app.post('/render', {
   }
 
   try {
-    const png = await renderMap(params);
+    const image = await renderMap(params);
     return reply
-      .header('Content-Type', 'image/png')
-      .header('Content-Length', png.length)
-      .send(png);
+      .header('Content-Type', params.format === 'webp' ? 'image/webp' : 'image/png')
+      .header('Content-Length', image.length)
+      .send(image);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err ?? 'unknown');
     req.log.error({ err }, 'Render failed');

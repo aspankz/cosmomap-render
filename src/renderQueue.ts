@@ -106,16 +106,17 @@ async function doRender(params: RenderParams): Promise<Buffer> {
     });
 
     // Composite symbols — pass fitted camera and output device px (ratio=1 since we already have device px)
-    const pngBuffer = await compositeSymbols(rgbaBuffer, deviceWidth, deviceHeight, {
+    const outBuffer = await compositeSymbols(rgbaBuffer, deviceWidth, deviceHeight, {
       center: fittedCenter,
       renderZoom,
       width: deviceWidth,   // output device px — project() uses these directly
       height: deviceHeight,
       ratio: 1,             // already device px; project() multiplies by ratio, so 1 is correct
       symbols,
+      format: params.format,
     });
 
-    return pngBuffer;
+    return outBuffer;
   } finally {
     map.release();
   }

@@ -40,6 +40,12 @@ export interface RenderParams {
   ratio: number;  // DPI multiplier, default 4
   orientation: 'portrait' | 'landscape';
 
+  /**
+   * Output image encoding. 'png' (default) for print-grade finals; 'webp' for
+   * previews (constructor overlay + cart) — far lighter transport at preview px.
+   */
+  format: 'png' | 'webp';
+
   // ---- theme ----
   themeId: string;
   colorOverrides: Record<string, string>;
@@ -150,6 +156,9 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
 
   const orientation = r['orientation'] === 'landscape' ? 'landscape' : 'portrait';
 
+  // Encoding: 'webp' only when explicitly requested (previews); else 'png'.
+  const format = r['format'] === 'webp' ? 'webp' : 'png';
+
   // Street labels (Experiment 5) — default-safe: absent field → labels on, RU.
   // showStreetNames defaults true unless an explicit `false` is sent.
   const showStreetNames = r['showStreetNames'] === false ? false : true;
@@ -165,6 +174,7 @@ export function normalizeAndValidateParams(raw: unknown): RenderParams {
     height,
     ratio,
     orientation,
+    format,
     themeId,
     colorOverrides,
     layerOptions,

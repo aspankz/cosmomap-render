@@ -1,5 +1,11 @@
 // Vendored from apps/frontend/src/entities/cityMap/theme/maplibreStyle.ts
 // Ported from Terraink (features/map/infrastructure/maplibreStyle.ts).
+//
+// ⚠️ SYNC RULE — this is a hand-maintained COPY, NOT the source of truth.
+// The source is apps/frontend/src/entities/cityMap/theme/maplibreStyle.ts (drives the
+// in-browser preview). DO NOT edit the style only here: any change must be made in the
+// frontend source AND mirrored back here, or the final PDF diverges from the preview.
+// No automated drift gate (decided 2026-06-08) — this comment is the gate.
 // Adaptation: removed `import type { StyleSpecification } from 'maplibre-gl'`
 // (type-only, no runtime dep). Return type is `unknown` — engine validates at runtime.
 

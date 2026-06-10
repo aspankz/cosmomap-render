@@ -15,7 +15,7 @@ Source code is available in this repository per AGPL requirements.
 - `GET /health` — returns 200 with queue/cache stats
 - Engine: `@maplibre/maplibre-gl-native` v6.4.1 (headless, no browser)
 - Tiles: public OpenFreeMap (`tiles.openfreemap.org/planet`) with in-memory LRU cache + retry
-- Symbol compositing: Web Mercator projection, bottom-center anchor, via `sharp`
+- Symbol compositing: Web Mercator projection, center anchor, via `sharp`
 
 ## RenderParams contract
 

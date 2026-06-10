@@ -1,6 +1,6 @@
 /**
  * Projects symbols (lng/lat) to device pixels and composites SVG icons onto the map image.
- * Plan §1.2 — Web Mercator projection, tile size 512, bottom-center anchor.
+ * Plan §1.2 — Web Mercator projection, tile size 512, center anchor.
  */
 import sharp from 'sharp';
 import { EMapSymbol } from './vendored/model/mapSymbols';
@@ -115,8 +115,14 @@ export async function compositeSymbols(
 
     if (sizeDevicePx <= 0) continue;
 
+    // CENTER anchor: the geo point sits at the icon's CENTER on BOTH axes, matching
+    // the preview (useCityMapSymbols.ts `icon-anchor:'center'`). Was bottom-anchor
+    // (`top = y - sizeDevicePx`), which put the geo point at the icon BOTTOM; the
+    // preview's visible center then drifted vs the map across zoom and the print
+    // disagreed with the preview. Center on both → the glyph's visual center is the
+    // coordinate, identical preview↔print. See backlog citymap-symbol-anchor-parity.
     const left = Math.round(x - sizeDevicePx / 2);
-    const top = Math.round(y - sizeDevicePx);
+    const top = Math.round(y - sizeDevicePx / 2);
 
     // Skip symbols that are completely out of frame
     if (left + sizeDevicePx < 0 || left > deviceWidth || top + sizeDevicePx < 0 || top > deviceHeight) {
